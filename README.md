@@ -1,70 +1,45 @@
-# Getting Started with Create React App
+# 🚀 LeetCode Spaced Repetition Tracker
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is a web application designed to help you study coding problems (like LeetCode) using the spaced repetition algorithm (an adaptation of SM-2).
 
-## Available Scripts
+The app allows you to add problems you've completed and will automatically schedule them for you to review at increasing intervals, helping you retain the knowledge for longer.
 
-In the project directory, you can run:
+## ✨ Features
 
-### `npm start`
+* **Add Problems:** A clean form to add new problems, including title, external ID (or URL), and difficulty.
+* **Problem List:** A card-based list of all problems currently due for review.
+* **Spaced Repetition Engine:** A built-in algorithm that calculates the next review date based on your 1-5 rating of how difficult the problem was.
+* **Dynamic Styling:**
+    * Problem cards are color-coded based on their difficulty (Easy, Medium, Hard).
+    * Review buttons are colored (Red for "Fail," Green for "Easy") to make reviewing fast.
+* **Smart "Solve" Link:** The "Solve Problem" button will correctly link to LeetCode if you provide an ID, or to a custom URL if you provide a full link.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 💻 Tech Stack
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+* **Frontend:**
+    * **React:** For building the user interface.
+    * **Material-UI (MUI):** For a "prettier" UI with pre-built components like `<Card>`, `<TextField>`, and `<Button>`.
+* **Backend:**
+    * **Supabase:** Used for its powerful and easy-to-use PostgreSQL database.
+    * **Supabase RLS:** Row Level Security is used to secure the database tables.
 
-### `npm test`
+## 🛠️ Getting Started
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+To run this project locally:
 
-### `npm run build`
+1.  **Clone the Repository**
+    ```bash
+    git clone [https://github.com/joshua-eversole/leetcode-supabase-tracker.git](https://github.com/joshua-eversole/leetcode-supabase-tracker.git)
+    cd leetcode-supabase-tracker
+    ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+2.  **Install Dependencies**
+    ```bash
+    npm install
+    ```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+3.  **Set Up Supabase**
+    * Go to [supabase.com](https://supabase.com) and create a new project.
+    * In the **SQL Editor**, run the SQL commands from the `schema.sql` file (or from the project's documentation) to create the `problems` and `reviews` tables.
+    * Go to **Authentication > Policies** and create `SELECT` and `INSERT` policies for both tables (e.g., `with check ( true )` for the `anon` role).
+    * Go to **Settings > API** and find your **Project URL** and

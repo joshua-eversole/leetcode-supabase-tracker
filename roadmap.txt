@@ -1,0 +1,144 @@
+Project Roadmap
+
+
+✅ Current Features (What's Done)
+Backend Setup:
+
+Supabase project is live.
+
+problems and reviews tables are created with the correct schema.
+
+Row Level Security (RLS) is fully configured for both INSERT and SELECT operations, so the app can read and write data.
+
+Frontend Foundation:
+
+The app is built with Create React App.
+
+The code is refactored into clean components: App.js (for logic) and ProblemForm, ProblemList, and ProblemItem (for UI).
+
+UI/UX:
+
+Material-UI (MUI) is installed and configured with a theme.
+
+ProblemForm is a "prettier" form using <TextField>, <Select>, and <Button>.
+
+ProblemList uses a <Card> layout, <Stack>, and a <CircularProgress> for loading.
+
+The UI is dynamic: cards and difficulty text are color-coded (green/yellow/red).
+
+Core Logic:
+
+Adding Problems: handleAddProblem works and saves new problems to the database.
+
+Reviewing Problems: handleReview and calculateReview are fully implemented. They correctly calculate the next review date based on the 1-5 rating and save this to the reviews table.
+
+Smart Link: The "Solve" link correctly handles both full URLs and simple IDs.
+
+Data Fetching: getDailyProblems successfully fetches and displays the problems.
+
+Version Control:
+
+The project is successfully set up with Git and pushed to a GitHub repository.
+
+🚀 Next Steps 
+
+1. Implement Client-Side Routing (Pages & Navigation)
+Goal: Break the app into separate pages (e.g., "Review List" and "Add Problem") and add a navigation menu.
+
+Action:
+
+Install react-router-dom: npm install react-router-dom
+
+In index.js, wrap your <App /> with <BrowserRouter>.
+
+In App.js, set up <Routes> and <Route> paths:
+
+path="/" can render your <ProblemList />.
+
+path="/add" can render your <ProblemForm />.
+
+Create a new component (e.g., src/components/Navbar.js) using the MUI <AppBar> and <Tabs> components.
+
+Add this <Navbar /> to App.js so it appears on all pages, allowing you to navigate between them.
+
+2. Refine the Spaced Repetition "Due" Logic
+Goal: You said you want to "get the spaced repetition learning element working." Your logic (calculateReview and getDailyProblems) is already working perfectly! The next step is to make the UI feel smarter.
+
+Action:
+
+In ProblemList.js, change the "Daily Review List" title to "Problems Due Today."
+
+In getDailyProblems (in App.js), you already have logic to find !review (new) or nextReviewDate <= today (due).
+
+Pass a prop to ProblemItem like isNew={!problem.reviewData}.
+
+In ProblemItem.js, add an MUI <Chip> component to the card. If isNew is true, render <Chip label="New" color="primary" />, otherwise render <Chip label="Review Due" color="secondary" />. This makes it clear why a problem is on the list.
+
+3. Auto-fill Problem from a LeetCode URL
+Goal: Have the user paste a LeetCode URL, and the app "figures out" the title, ID, and difficulty.
+
+Action (Simple "URL Parsing" Start):
+
+In ProblemForm.js, remove the "Title," "External ID," and "Difficulty" fields.
+
+Replace them with one <TextField label="LeetCode URL" />.
+
+When the user submits, use JavaScript to parse the URL.
+
+const url = new URL(e.target.value);
+
+const pathSegments = url.pathname.split('/');
+
+const external_id = pathSegments[2]; (This gets the "two-sum" part).
+
+In handleAddProblem, you'll only be able to save the external_id. This is a good first step.
+
+Action (Advanced "Scraping" - This is hard):
+
+Scraping data from LeetCode from the front-end is blocked by CORS.
+
+You would need to create a Supabase Edge Function (a backend function).
+
+Your React app would send the external_id to this function.
+
+The function would then run on a server, scrape the LeetCode page for the title and difficulty, and send it back to your app. This is a complex but powerful feature.
+
+
+
+
+💡 Potential ideas for next steps:
+
+1. Add User Authentication
+Suggestion: Right now, this is a single-user app. The most powerful next step is to use Supabase Auth to add a "Sign Up" and "Log In" page.
+
+Why? This allows multiple different users to have their own private lists of problems.
+
+Action: You would update your RLS policies from anon to "Enable read/write access for authenticated users only" and add rules like auth.uid() = user_id.
+
+2. Implement "Lists" and "Tags"
+Suggestion: Your problems table has a lists column that we are currently hard-coding. Let's use it!
+
+Why? This would let you filter your problems by lists like "Blind 75," "Neetcode 150," or by topic like "Arrays," "Graphs," "Dynamic Programming."
+
+Action:
+
+Update your ProblemForm to include a <TextField> for "Tags" (or "Lists").
+
+In ProblemItem.js, render these tags using MUI <Chip> components on the card.
+
+Add a filter/dropdown to your ProblemList page to only show problems with a certain tag.
+
+3. Add an "Undo" Button
+Suggestion: When you click a review button, the card instantly disappears. This is good, but what if you mis-click?
+
+Why? An "Undo" feature makes the app feel much more robust and forgiving.
+
+Action:
+
+Install an "undo" library or use an MUI <Snackbar> component.
+
+When handleReview is called, don't filter the state immediately.
+
+Instead, show a <Snackbar> that says "Problem reviewed. [Undo]".
+
+If the user clicks "Undo," reverse the operation. If they don't, remove the card from the list after 5 seconds.
