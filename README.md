@@ -42,4 +42,18 @@ To run this project locally:
     * Go to [supabase.com](https://supabase.com) and create a new project.
     * In the **SQL Editor**, run the SQL commands from the `schema.sql` file (or from the project's documentation) to create the `problems` and `reviews` tables.
     * Go to **Authentication > Policies** and create `SELECT` and `INSERT` policies for both tables (e.g., `with check ( true )` for the `anon` role).
-    * Go to **Settings > API** and find your **Project URL** and
+    * Go to **Settings > API** and find your **Project URL** and **`anon` (public) Key**.
+
+4.  **Create `.env.local` File**
+    * In the root of the project, create a file named `.env.local`.
+    * Add your Supabase keys to it:
+    ```
+    REACT_APP_SUPABASE_URL=YOUR_PROJECT_URL_HERE
+    REACT_APP_SUPABASE_PUBLISHABLE_KEY=YOUR_ANON_PUBLIC_KEY_HERE
+    ```
+
+5.  **Run the App**
+    ```bash
+    npm start
+    ```
+    The app should now be running on `http://localhost:3000`.
