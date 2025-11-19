@@ -1,16 +1,12 @@
-// src/App.js
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 
-// --- Import our new components ---
 import ProblemForm from './components/ProblemForm';
 import ProblemList from './components/ProblemList';
+import Container from '@mui/material/Container';
 
-// --- The Spaced Repetition "Brain" ---
-// This function doesn't change
+// Logic behind all of the srl date decisions
 function calculateReview(rating, oldReview) {
-  // ... (all your existing calculateReview logic is here)
-  // [No changes]
   if (!oldReview) {
     let interval;
     if (rating < 3) interval = 0; 
@@ -48,18 +44,24 @@ function calculateReview(rating, oldReview) {
   };
 }
 
+function getIntervals(reviewData) {
+    const intervals = {};
+    // Calculate the resulting interval for each possible rating (1 through 5)
+    for (let rating = 1; rating <= 5; rating++) {
+        const result = calculateReview(rating, reviewData);
+        intervals[rating] = result.interval_days;
+    }
+    return intervals;
+}
+
 
 function App() {
-  // --- All state lives in App.js ---
   const [dailyProblems, setDailyProblems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- All data logic lives in App.js ---
   useEffect(() => {
     async function getDailyProblems() {
       setLoading(true);
-      // ... (all your existing getDailyProblems logic)
-      // [No changes]
       const { data: problems, error: problemsError } = await supabase
         .from('problems')
         .select('*');
@@ -77,17 +79,22 @@ function App() {
         if (nextReviewDate <= today) return true;
         return false;
       });
-      const mergedProblems = problemsToShow.map(problem => ({
-        ...problem,
-        reviewData: reviewsMap.get(problem.id) || null
-      }));
+      const mergedProblems = problemsToShow.map(problem => {
+          const review = reviewsMap.get(problem.id) || null;
+          return {
+              ...problem, 
+              reviewData: review, 
+              reviewIntervals: getIntervals(review), 
+          };
+      });
+
       setDailyProblems(mergedProblems);
       setLoading(false);
     }
     getDailyProblems();
   }, []);
 
-  // --- All event handlers live in App.js ---
+  // Handles adding a new problem to the database
   async function handleAddProblem(title, external_id, difficulty) {
     const { data, error } = await supabase
       .from('problems')
@@ -103,12 +110,30 @@ function App() {
     }
   }
 
-  async function handleReview(problem_id, existingReviewData, rating) {
-    // ... (all your existing handleReview logic)
-    // [No changes]
+
+  // Handles the logic behind reviewing an existing problem and how to put it back in the deck
+async function handleReview(problem_id, existingReviewData, rating, currentNotes) { // <-- ADDED currentNotes
+    
+    // Save the notes
+    if (problem_id && currentNotes !== (existingReviewData?.description || '')) {
+        const { error: descError } = await supabase
+            .from('problems')
+            .update({ description: currentNotes }) // Update the description column
+            .eq('id', problem_id); // Where the ID matches
+
+        if (descError) {
+            console.error('Error updating problem description during review:', descError);
+        }
+    }
+
+    // 1. Calculate new review state
     const { interval_days, ease_factor, consecutive_successes } = calculateReview(rating, existingReviewData);
+
+    // 2. Calculate next review date
     const today = new Date();
     const next_review_at = new Date(today.setDate(today.getDate() + interval_days));
+
+    // 3. Create the data object for the database
     const reviewPayload = {
       problem_id: problem_id,
       interval_days: interval_days,
@@ -117,36 +142,44 @@ function App() {
       next_review_at: next_review_at.toISOString(),
       consecutive_successes: consecutive_successes,
     };
+
+    // 4. Check if this is the first review or an update
     if (!existingReviewData) {
-      const { error } = await supabase.from('reviews').insert(reviewPayload);
+      // If this is a fisrt review, insert a new problem
+      const { error } = await supabase
+        .from('reviews')
+        .insert(reviewPayload);
       if (error) console.warn('Error inserting review:', error);
+
     } else {
-      const { error } = await supabase.from('reviews').update(reviewPayload).eq('id', existingReviewData.id);
+      // If this is an update, update the existing problem
+      const { error } = await supabase
+        .from('reviews')
+        .update(reviewPayload)
+        .eq('id', existingReviewData.id);
       if (error) console.warn('Error updating review:', error);
     }
+
+    // 5. Remove the problem from the daily review list
     setDailyProblems(dailyProblems.filter(p => p.id !== problem_id));
   }
 
-  // --- The NEW simple render method ---
-  return (
-    <div className="App">
-      <h2>Add a New Problem</h2>
-      {/* We pass the 'handleAddProblem' function down as a prop
-        named 'onSubmit'.
-      */}
-      <ProblemForm onSubmit={handleAddProblem} />
-      
-      <hr />
+return (
+  <Container maxWidth="lg"> 
+        
+        <h2>Add a New Problem</h2>
+        <ProblemForm onSubmit={handleAddProblem} />
+        
+        <hr />
 
-      <h2>Daily Review List</h2>
-      {/* We pass the data and functions down as props.
-      */}
-      <ProblemList
-        loading={loading}
-        problems={dailyProblems}
-        onReview={handleReview}
-      />
-    </div>
+        <h2>Daily Review List</h2>
+        <ProblemList
+          loading={loading}
+          problems={dailyProblems}
+          onReview={handleReview}
+        />
+      
+      </Container>
   );
 }
 

@@ -1,5 +1,4 @@
-// src/components/ProblemItem.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 // --- Import the MUI components ---
 import Card from '@mui/material/Card';
@@ -9,22 +8,31 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Box from '@mui/material/Box';
+import Divider from '@mui/material/Divider'; // for separating content from actions
+import TextField from '@mui/material/TextField'; 
+import SaveIcon from '@mui/icons-material/Save'; // save button
+import Tooltip from '@mui/material/Tooltip'; // mouse-over tooltips
+import { alpha } from '@mui/material/styles'; // For soft background colors
 
-// --- Import the `alpha` utility for creating soft background colors ---
-import { alpha } from '@mui/material/styles';
 
-function ProblemItem({ problem, onReview }) {
+function ProblemItem({ problem, onReview }) { 
+  
+  const [notes, setNotes] = useState('');
+
+  // Use useEffect to initialize notes with the existing description
+  useEffect(() => {
+    setNotes(problem.description || '');
+  }, [problem.description]);
+
   const handleReviewClick = (rating) => {
-    onReview(problem.id, problem.reviewData, rating);
+    // We pass the current notes state to the parent function
+    onReview(problem.id, problem.reviewData, rating, notes); 
   };
-
-  // --- Request 3: Color-coded difficulty ---
-  // We define a map for our styles based on difficulty
-  const difficultyStyles = {
+  
+  
+  const difficultyStyles = { 
     Easy: {
-      // Use 'success.dark' for better contrast on the light bg
       color: 'success.dark',
-      // Use `alpha` to get a 10% opaque version of the main color
       bgcolor: (theme) => alpha(theme.palette.success.main, 0.1)
     },
     Medium: {
@@ -36,65 +44,99 @@ function ProblemItem({ problem, onReview }) {
       bgcolor: (theme) => alpha(theme.palette.error.main, 0.1)
     }
   };
-  // Get the styles for the current problem, or default to an empty object
   const currentStyle = difficultyStyles[problem.difficulty] || {};
 
-
-  // --- Request 4: Smarter "Solve" link ---
   const getSolveUrl = () => {
     const id = problem.external_id;
-    // Check if the ID is already a full URL
     if (id.startsWith('http://') || id.startsWith('https://')) {
       return id;
     }
-    // If not, build the LeetCode URL
     return `https://leetcode.com/problems/${id}/`;
   };
 
   return (
-    // Apply the conditional background color to the Card
-    <Card variant="outlined" sx={{ bgcolor: currentStyle.bgcolor }}>
+    <Card 
+      elevation={4} 
+      sx={{ 
+        bgcolor: currentStyle.bgcolor,
+        borderRadius: 2, 
+        transition: 'transform 0.2s, box-shadow 0.2s', 
+        '&:hover': {
+          transform: 'translateY(-4px)', 
+          boxShadow: 8, 
+        },
+      }}
+    >
       <CardContent>
-        <Typography variant="h5" component="div">
+        {/* Title Link */}
+        <Typography 
+          variant="h5" 
+          component="a" 
+          href={getSolveUrl()} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          sx={{
+              textDecoration: 'none',
+              color: 'primary.main', 
+              '&:hover': {
+                  textDecoration: 'underline'
+              }
+          }}
+        >
           {problem.title}
         </Typography>
 
-        {/* Apply the conditional text color to the difficulty */}
         <Typography 
           sx={{ mb: 1.5, color: currentStyle.color, fontWeight: 'bold' }} 
         >
           {problem.difficulty}
         </Typography>
 
-        <Typography variant="body2">
-          Review this problem to keep it fresh in your mind.
-        </Typography>
+        {/* Notes Text Field */}
+        <Box sx={{ mt: 2 }}>
+            <TextField
+                label="Attempt Notes"
+                placeholder="Key concepts, errors, or complexity analysis."
+                multiline
+                fullWidth
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                variant="outlined"
+                size="small"
+            />
+        </Box>
+        
       </CardContent>
 
-      <CardActions sx={{ justifyContent: 'space-between' }}>
-        {/* Use the new getSolveUrl function for the href */}
-        <Button
-          component="a"
-          href={getSolveUrl()}
-          target="_blank"
-          rel="noopener noreferrer"
-          size="small"
-        >
-          Solve Problem
-        </Button>
+      <Divider /> 
 
-        {/* --- Request 1 & 2: 1-5 Buttons with colors --- */}
-        <ButtonGroup variant="outlined" size="small">
-          {/* 1 = Red */}
-          <Button color="error" onClick={() => handleReviewClick(1)}>1</Button>
-          {/* 2 = "In-between" (default blue) */}
-          <Button color="primary" onClick={() => handleReviewClick(2)}>2</Button>
-          {/* 3 = Yellow */}
-          <Button color="warning" onClick={() => handleReviewClick(3)}>3</Button>
-          {/* 4 = "In-between" (default blue) */}
-          <Button color="primary" onClick={() => handleReviewClick(4)}>4</Button>
-          {/* 5 = Green */}
-          <Button color="success" onClick={() => handleReviewClick(5)}>5</Button>
+      <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
+        <Typography variant="caption" sx={{ mr: 2, color: 'text.secondary' }}>
+            Rank to Save Notes & Review:
+        </Typography>
+        {/* Buttons for each possible rating (1 through 5), as well as the calculated times for each*/}
+        <ButtonGroup variant="contained" size="small">
+          {Object.entries(problem.reviewIntervals).map(([rating, interval]) => {
+            const tooltipText = interval === 0 
+              ? "Review Tomorrow (Failed)" 
+              : `Due in ${interval} days`;
+
+            let colorProp;
+            if (rating === '1') colorProp = 'error';
+            else if (rating === '2') colorProp = 'warning';
+            else if (rating === '3') colorProp = 'secondary';
+            else if (rating === '4') colorProp = 'info';
+            else if (rating === '5') colorProp = 'success';
+
+            return (
+              <Tooltip key={rating} title={tooltipText}>
+                <Button color={colorProp} onClick={() => handleReviewClick(Number(rating))}>
+                  {rating}
+                </Button>
+              </Tooltip>
+            );
+          })}
         </ButtonGroup>
       </CardActions>
     </Card>
