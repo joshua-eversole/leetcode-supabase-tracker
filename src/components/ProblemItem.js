@@ -13,6 +13,8 @@ import TextField from '@mui/material/TextField';
 import SaveIcon from '@mui/icons-material/Save'; // save button
 import Tooltip from '@mui/material/Tooltip'; // mouse-over tooltips
 import { alpha } from '@mui/material/styles'; // For soft background colors
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
 
 
 function ProblemItem({ problem, onReview }) { 
@@ -92,6 +94,20 @@ function ProblemItem({ problem, onReview }) {
           {problem.difficulty}
         </Typography>
 
+        {problem.tags && problem.tags.length > 0 && (
+        <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
+            {problem.tags.map((tag, index) => (
+                <Chip 
+                    key={index} 
+                    label={tag} 
+                    size="small" 
+                    variant="outlined" 
+                    sx={{ fontSize: '0.7rem' }}
+                />
+            ))}
+        </Stack>
+    )}
+
         {/* Notes Text Field */}
         <Box sx={{ mt: 2 }}>
             <TextField
@@ -117,8 +133,8 @@ function ProblemItem({ problem, onReview }) {
         </Typography>
         {/* Buttons for each possible rating (1 through 5), as well as the calculated times for each*/}
         <ButtonGroup variant="contained" size="small">
-          {Object.entries(problem.reviewIntervals).map(([rating, interval]) => {
-            const tooltipText = interval === 0 
+          {Object.entries(problem.reviewIntervals || {}).map(([rating, interval]) => {
+              const tooltipText = interval === 0 
               ? "Review Tomorrow (Failed)" 
               : `Due in ${interval} days`;
 

@@ -95,18 +95,37 @@ function App() {
   }, []);
 
   // Handles adding a new problem to the database
-  async function handleAddProblem(title, external_id, difficulty) {
+  async function handleAddProblem(title, external_id, difficulty, fetchedTags = []) {
+    const selectedLists = ["Neetcode 250"]; // once this gets pulled in from the database, stop hard-coding it
     const { data, error } = await supabase
       .from('problems')
       .insert([
-        { title: title, external_id: external_id, difficulty: difficulty, lists: ["Neetcode 250"] }
+        { 
+            title: title, 
+            external_id: external_id, 
+            difficulty: difficulty, 
+            lists: fetchedTags,
+            tags: selectedLists
+        }
       ])
       .select();
 
     if (error) {
       console.warn(error);
     } else if (data) {
-      setDailyProblems([...dailyProblems, { ...data[0], reviewData: null }]);
+      const newProblem = data[0];
+      
+      // Calculate intervals for the new problem
+      const initialIntervals = getIntervals(null);
+
+      setDailyProblems([
+        ...dailyProblems, 
+        { 
+            ...newProblem, 
+            reviewData: null, 
+            reviewIntervals: initialIntervals 
+        }
+      ]);
     }
   }
 
