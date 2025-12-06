@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
+// --- Import Utilities ---
+import { formatRelativeDate } from '../utilities/dateHelper';
+
 // --- Import the MUI components ---
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -134,9 +137,16 @@ function ProblemItem({ problem, onReview }) {
         {/* Buttons for each possible rating (1 through 5), as well as the calculated times for each*/}
         <ButtonGroup variant="contained" size="small">
           {Object.entries(problem.reviewIntervals || {}).map(([rating, interval]) => {
-              const tooltipText = interval === 0 
-              ? "Review Tomorrow (Failed)" 
-              : `Due in ${interval} days`;
+            // Calculate the dte for the interval
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + interval);
+            
+            // Make tjhe date human-readable
+            const humanDate = formatRelativeDate(targetDate.toISOString());
+            
+            const tooltipText = interval === 0 
+                ? "Review Today (Fail)" 
+                : `Due ${humanDate}`;
 
             let colorProp;
             if (rating === '1') colorProp = 'error';

@@ -3,7 +3,11 @@ import { supabase } from './supabaseClient';
 
 import ProblemForm from './components/ProblemForm';
 import ProblemList from './components/ProblemList';
+import Navbar from './components/Navbar';
+import AllProblemsTable from './components/AllProblemsTable';
+
 import Container from '@mui/material/Container';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 
 // Logic behind all of the srl date decisions
 function calculateReview(rating, oldReview) {
@@ -56,149 +60,135 @@ function getIntervals(reviewData) {
 
 
 function App() {
-  const [dailyProblems, setDailyProblems] = useState([]);
+const [allProblems, setAllProblems] = useState([]); 
   const [loading, setLoading] = useState(true);
 
+  //Navigation
+  const navigate = useNavigate();
+
   useEffect(() => {
-    async function getDailyProblems() {
+    async function fetchData() {
       setLoading(true);
-      const { data: problems, error: problemsError } = await supabase
-        .from('problems')
-        .select('*');
-      if (problemsError) console.warn(problemsError);
-      const { data: reviews, error: reviewsError } = await supabase
-        .from('reviews')
-        .select('*');
-      if (reviewsError) console.warn(reviewsError);
-      const today = new Date().setHours(0, 0, 0, 0); 
-      const reviewsMap = new Map(reviews.map(review => [review.problem_id, review]));
-      const problemsToShow = problems.filter(problem => {
-        const review = reviewsMap.get(problem.id);
-        if (!review) return true;
-        const nextReviewDate = new Date(review.next_review_at).setHours(0, 0, 0, 0);
-        if (nextReviewDate <= today) return true;
-        return false;
-      });
-      const mergedProblems = problemsToShow.map(problem => {
-          const review = reviewsMap.get(problem.id) || null;
-          return {
-              ...problem, 
-              reviewData: review, 
-              reviewIntervals: getIntervals(review), 
-          };
+
+      const { data: problems } = await supabase.from('problems').select('*');
+      const { data: reviews } = await supabase.from('reviews').select('*');
+
+      // Create lookup map
+      const reviewsMap = new Map(reviews.map(r => [r.problem_id, r]));
+
+      // Merge data for ALL problems
+      const merged = problems.map(problem => {
+        const review = reviewsMap.get(problem.id) || null;
+        return {
+            ...problem,
+            reviewData: review,
+            reviewIntervals: getIntervals(review)
+        };
       });
 
-      setDailyProblems(mergedProblems);
+      setAllProblems(merged);
       setLoading(false);
     }
-    getDailyProblems();
+    fetchData();
   }, []);
 
-  // Handles adding a new problem to the database
-  async function handleAddProblem(title, external_id, difficulty, fetchedTags = []) {
-    const selectedLists = ["Neetcode 250"]; // once this gets pulled in from the database, stop hard-coding it
+  const dailyProblems = allProblems.filter(p => {
+    if (!p.reviewData) return true; // New problem
+    const today = new Date().setHours(0,0,0,0);
+    const nextReview = new Date(p.reviewData.next_review_at).setHours(0,0,0,0);
+    return nextReview <= today;
+  });
+
+async function handleAddProblem(title, external_id, difficulty, fetchedTags = []) {
+    const selectedLists = ["Neetcode 250"]; 
     const { data, error } = await supabase
       .from('problems')
-      .insert([
-        { 
-            title: title, 
-            external_id: external_id, 
-            difficulty: difficulty, 
-            lists: fetchedTags,
-            tags: selectedLists
-        }
-      ])
+      .insert([{ 
+            title, external_id, difficulty, 
+            lists: selectedLists, tags: fetchedTags 
+      }])
       .select();
 
-    if (error) {
-      console.warn(error);
-    } else if (data) {
+    if (data) {
       const newProblem = data[0];
-      
-      // Calculate intervals for the new problem
       const initialIntervals = getIntervals(null);
-
-      setDailyProblems([
-        ...dailyProblems, 
-        { 
-            ...newProblem, 
-            reviewData: null, 
-            reviewIntervals: initialIntervals 
-        }
+      // Update ALL problems state
+      setAllProblems([
+        ...allProblems, 
+        { ...newProblem, reviewData: null, reviewIntervals: initialIntervals }
       ]);
+      navigate('/'); 
     }
   }
 
 
   // Handles the logic behind reviewing an existing problem and how to put it back in the deck
-async function handleReview(problem_id, existingReviewData, rating, currentNotes) { // <-- ADDED currentNotes
-    
-    // Save the notes
+async function handleReview(problem_id, existingReviewData, rating, currentNotes) {
+    // 1. Save notes (Same as before)
     if (problem_id && currentNotes !== (existingReviewData?.description || '')) {
-        const { error: descError } = await supabase
-            .from('problems')
-            .update({ description: currentNotes }) // Update the description column
-            .eq('id', problem_id); // Where the ID matches
-
-        if (descError) {
-            console.error('Error updating problem description during review:', descError);
-        }
+         await supabase.from('problems').update({ description: currentNotes }).eq('id', problem_id);
     }
 
-    // 1. Calculate new review state
+    // 2. Calculate Math (Same as before)
     const { interval_days, ease_factor, consecutive_successes } = calculateReview(rating, existingReviewData);
-
-    // 2. Calculate next review date
     const today = new Date();
     const next_review_at = new Date(today.setDate(today.getDate() + interval_days));
 
-    // 3. Create the data object for the database
     const reviewPayload = {
-      problem_id: problem_id,
-      interval_days: interval_days,
-      ease_factor: ease_factor,
+      problem_id, interval_days, ease_factor, consecutive_successes,
       last_reviewed_at: new Date().toISOString(),
       next_review_at: next_review_at.toISOString(),
-      consecutive_successes: consecutive_successes,
     };
 
-    // 4. Check if this is the first review or an update
+    // 3. Database Update (Same as before)
+    let newReviewData = null;
     if (!existingReviewData) {
-      // If this is a fisrt review, insert a new problem
-      const { error } = await supabase
-        .from('reviews')
-        .insert(reviewPayload);
-      if (error) console.warn('Error inserting review:', error);
-
+      const { data } = await supabase.from('reviews').insert(reviewPayload).select();
+      if(data) newReviewData = data[0];
     } else {
-      // If this is an update, update the existing problem
-      const { error } = await supabase
-        .from('reviews')
-        .update(reviewPayload)
-        .eq('id', existingReviewData.id);
-      if (error) console.warn('Error updating review:', error);
+      const { data } = await supabase.from('reviews').update(reviewPayload).eq('id', existingReviewData.id).select();
+      if(data) newReviewData = data[0];
     }
 
-    // 5. Remove the problem from the daily review list
-    setDailyProblems(dailyProblems.filter(p => p.id !== problem_id));
+    // 4. UPDATE STATE
+    // Instead of filtering the list, we update the specific item in "allProblems"
+    setAllProblems(prevProblems => prevProblems.map(p => {
+        if (p.id === problem_id) {
+            return {
+                ...p,
+                reviewData: newReviewData, // Update with new dates
+                reviewIntervals: getIntervals(newReviewData) // Recalculate tooltips
+            };
+        }
+        return p;
+    }));
   }
 
-return (
-  <Container maxWidth="lg"> 
-        
-        <h2>Add a New Problem</h2>
-        <ProblemForm onSubmit={handleAddProblem} />
-        
-        <hr />
+  return (
+    <>
+      <Navbar />
+      <Container maxWidth="lg">
+        <Routes>
+          {/* Home: Passes the FILTERED daily list */}
+          <Route path="/" element={
+              <ProblemList 
+                loading={loading} 
+                problems={dailyProblems} 
+                onReview={handleReview} 
+              />
+          } />
 
-        <h2>Daily Review List</h2>
-        <ProblemList
-          loading={loading}
-          problems={dailyProblems}
-          onReview={handleReview}
-        />
-      
+          {/* New Page: Passes the COMPLETE list */}
+          <Route path="/all" element={
+              <AllProblemsTable problems={allProblems} />
+          } />
+
+          <Route path="/add" element={
+              <ProblemForm onSubmit={handleAddProblem} />
+          } />
+        </Routes>
       </Container>
+    </>
   );
 }
 
