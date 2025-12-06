@@ -26,17 +26,17 @@ function Navbar() {
             to="/"
             sx={{ fontWeight: location.pathname === '/' ? 'bold' : 'normal' }}
           >
-            Review List
+            For Review
           </Button>
 
-          {/* 2. NEW: All Problems */}
+          {/* 2. Problem List */}
           <Button 
             color="inherit" 
             component={Link} 
             to="/all"
             sx={{ fontWeight: location.pathname === '/all' ? 'bold' : 'normal' }}
           >
-            All Problems
+            Problem List
           </Button>
 
           {/* 3. Add Problem */}

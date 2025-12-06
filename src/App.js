@@ -8,39 +8,59 @@ import AllProblemsTable from './components/AllProblemsTable';
 
 import Container from '@mui/material/Container';
 import { Routes, Route, useNavigate } from 'react-router-dom';
+import Typography from '@mui/material/Typography';
 
 // Logic behind all of the srl date decisions
 function calculateReview(rating, oldReview) {
+  // Tune these to find the sweet spot
+  const MIN_EASE = 130;
+  const MAX_INTERVAL_BONUS = 1.3;
+  
+  // CONFIG: How many days to wait based on the first rating (1-5)
+  const INITIAL_INTERVALS = [1, 2, 3, 5, 7];
+
+  // Scenario 1: new problem
   if (!oldReview) {
-    let interval;
-    if (rating < 3) interval = 0; 
-    else if (rating === 3) interval = 1;
-    else interval = 4;
+    const interval = INITIAL_INTERVALS[rating - 1];
 
     return {
       interval_days: interval,
-      ease_factor: 250,
-      consecutive_successes: 0,
+      ease_factor: 250, // Standard starting ease
+      consecutive_successes: rating >= 3 ? 1 : 0,
     };
   }
+
+  // Scenario 2: Reviewing an existing problem
   let { ease_factor, interval_days, consecutive_successes } = oldReview;
+
+  // A. Failed (1 or 2)
   if (rating < 3) {
     return {
-      interval_days: 0, 
-      ease_factor: Math.max(130, ease_factor - 20),
+      interval_days: rating, // Wait 1 or 2 days
+      ease_factor: Math.max(MIN_EASE, ease_factor - 20),
       consecutive_successes: 0,
     };
   }
+
+  // B. Pass (3, 4)
   consecutive_successes += 1;
+
+  // Update Ease Factor
   ease_factor = ease_factor + (0.1 - (5 - rating) * (0.08 + (5 - rating) * 0.02));
-  if (ease_factor < 130) ease_factor = 130;
+  if (ease_factor < MIN_EASE) ease_factor = MIN_EASE;
+
+  // Update Interval
   if (consecutive_successes === 1) {
     interval_days = 1;
   } else if (consecutive_successes === 2) {
     interval_days = 6;
   } else {
-    interval_days = Math.ceil(interval_days * ease_factor / 100);
+    // If we've succeeded multiple times, start expanding exponentially
+    let growthMultiplier = ease_factor / 100;
+    if (rating === 5) growthMultiplier *= MAX_INTERVAL_BONUS;
+    interval_days = Math.ceil(interval_days * growthMultiplier);
   }
+
   return {
     interval_days: interval_days,
     ease_factor: Math.round(ease_factor),
@@ -92,11 +112,29 @@ const [allProblems, setAllProblems] = useState([]);
     fetchData();
   }, []);
 
-  const dailyProblems = allProblems.filter(p => {
-    if (!p.reviewData) return true; // New problem
-    const today = new Date().setHours(0,0,0,0);
-    const nextReview = new Date(p.reviewData.next_review_at).setHours(0,0,0,0);
-    return nextReview <= today;
+// --- DERIVED STATE ---
+  //Compare based at midnight
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); 
+
+  // Filter for overdue problems
+  const overdueProblems = allProblems.filter(p => {
+    if (!p.reviewData) return false; // New problems shouldn't be here, they should be in today
+    
+    const nextReview = new Date(p.reviewData.next_review_at);
+    nextReview.setHours(0, 0, 0, 0);
+    
+    return nextReview < today;
+  });
+
+  // 3. Get today's problems
+  const todaysProblems = allProblems.filter(p => {
+    if (!p.reviewData) return true; 
+    
+    const nextReview = new Date(p.reviewData.next_review_at);
+    nextReview.setHours(0, 0, 0, 0);
+    
+    return nextReview.getTime() === today.getTime();
   });
 
 async function handleAddProblem(title, external_id, difficulty, fetchedTags = []) {
@@ -169,13 +207,35 @@ async function handleReview(problem_id, existingReviewData, rating, currentNotes
       <Navbar />
       <Container maxWidth="lg">
         <Routes>
-          {/* Home: Passes the FILTERED daily list */}
+          {/* Home: Passes the SPLIT lists */}
           <Route path="/" element={
+            <>
+              {/* SECTION 1: OVERDUE (Only show if we have them) */}
+              {overdueProblems.length > 0 && (
+                <>
+                  <Typography variant="h5" sx={{ mb: 2, mt: 2, color: 'error.main', fontWeight: 'bold' }}>
+                    ⚠️ Overdue Reviews
+                  </Typography>
+                  <ProblemList 
+                    loading={loading} 
+                    problems={overdueProblems} 
+                    onReview={handleReview} 
+                  />
+                  {/* Divider between sections */}
+                  <hr style={{ margin: '32px 0', borderColor: '#eee' }} />
+                </>
+              )}
+
+              {/* SECTION 2: TODAY */}
+              <Typography variant="h5" sx={{ mb: 2, mt: 2 }}>
+                Due Today
+              </Typography>
               <ProblemList 
                 loading={loading} 
-                problems={dailyProblems} 
+                problems={todaysProblems} 
                 onReview={handleReview} 
               />
+            </>
           } />
 
           {/* New Page: Passes the COMPLETE list */}
