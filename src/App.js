@@ -5,6 +5,7 @@ import ProblemForm from './components/ProblemForm';
 import ProblemList from './components/ProblemList';
 import Navbar from './components/Navbar';
 import AllProblemsTable from './components/AllProblemsTable';
+import Auth from './components/Auth';
 
 import Container from '@mui/material/Container';
 import { Routes, Route, useNavigate } from 'react-router-dom';
@@ -79,14 +80,31 @@ function getIntervals(reviewData) {
 }
 
 
-function App() {
-const [allProblems, setAllProblems] = useState([]); 
-  const [loading, setLoading] = useState(true);
+function App() 
+{
+  const [session, setSession] = useState(null) // Supabase session
+  const [allProblems, setAllProblems] = useState([]);  // All problems
+  const [loading, setLoading] = useState(true); // Loading state
+  const navigate = useNavigate(); // Navigation
 
-  //Navigation
-  const navigate = useNavigate();
+  // Check if we have a session
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Listen for login/logout changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
+    if (!session) return; // Don't fetch if we're not logged in
+
     async function fetchData() {
       setLoading(true);
 
@@ -110,7 +128,7 @@ const [allProblems, setAllProblems] = useState([]);
       setLoading(false);
     }
     fetchData();
-  }, []);
+  }, [session]);
 
 // --- DERIVED STATE ---
   //Compare based at midnight
@@ -138,12 +156,18 @@ const [allProblems, setAllProblems] = useState([]);
   });
 
 async function handleAddProblem(title, external_id, difficulty, fetchedTags = []) {
+    if (!session) return; // Don't add if we're not logged in
+
     const selectedLists = ["Neetcode 250"]; 
     const { data, error } = await supabase
       .from('problems')
       .insert([{ 
-            title, external_id, difficulty, 
-            lists: selectedLists, tags: fetchedTags 
+            title, 
+            external_id, 
+            difficulty, 
+            lists: selectedLists, 
+            tags: fetchedTags,
+            user_id: session.user.id
       }])
       .select();
 
@@ -176,6 +200,7 @@ async function handleReview(problem_id, existingReviewData, rating, currentNotes
       problem_id, interval_days, ease_factor, consecutive_successes,
       last_reviewed_at: new Date().toISOString(),
       next_review_at: next_review_at.toISOString(),
+      user_id: session.user.id
     };
 
     // 3. Database Update (Same as before)
@@ -243,6 +268,11 @@ async function handleReview(problem_id, existingReviewData, rating, currentNotes
       }
       return p;
     }));
+  }
+
+  // If we're not logged in, show the auth page
+  if (!session) {
+    return <Auth />; 
   }
 
   return (
