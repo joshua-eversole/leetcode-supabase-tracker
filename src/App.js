@@ -202,6 +202,49 @@ async function handleReview(problem_id, existingReviewData, rating, currentNotes
     }));
   }
 
+  //Delete a problem
+  async function handleDeleteProblem(id) {
+    // Delete from the database
+    const { error } = await supabase
+      .from('problems')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting:', error);
+      return;
+    }
+
+    // Remove the problem from the array
+    setAllProblems(prev => prev.filter(p => p.id !== id));
+  }
+
+  // Edit a problem
+  async function handleEditProblem(updatedProblem) {
+    // 1. Prepare payload
+    const { id, title, external_id, difficulty, tags } = updatedProblem;
+
+    // Update the database
+    const { error } = await supabase
+      .from('problems')
+      .update({ title, external_id, difficulty, tags })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating:', error);
+      return;
+    }
+
+    // 3. Update the local state
+    setAllProblems(prev => prev.map(p => {
+      if (p.id === id) {
+        // IMPORTANT: don't edit the existing reviews, just edit the problem details 
+        return { ...p, title, external_id, difficulty, tags };
+      }
+      return p;
+    }));
+  }
+
   return (
     <>
       <Navbar />
@@ -238,14 +281,20 @@ async function handleReview(problem_id, existingReviewData, rating, currentNotes
             </>
           } />
 
-          {/* New Page: Passes the COMPLETE list */}
+          {/* Passes the complete list and the delete and edit handlers*/}
           <Route path="/all" element={
-              <AllProblemsTable problems={allProblems} />
+              <AllProblemsTable 
+                problems={allProblems} 
+                onDelete={handleDeleteProblem} 
+                onEdit={handleEditProblem}     
+              />
           } />
 
           <Route path="/add" element={
               <ProblemForm onSubmit={handleAddProblem} />
           } />
+
+          
         </Routes>
       </Container>
     </>
