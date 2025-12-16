@@ -6,6 +6,7 @@ import ProblemList from './components/ProblemList';
 import Navbar from './components/Navbar';
 import AllProblemsTable from './components/AllProblemsTable';
 import Auth from './components/Auth';
+import StatsDashboard from './components/StatsDashboard';
 
 import Container from '@mui/material/Container';
 import { Routes, Route, useNavigate } from 'react-router-dom';
@@ -283,7 +284,11 @@ async function handleReview(problem_id, existingReviewData, rating, currentNotes
           {/* Home: Passes the SPLIT lists */}
           <Route path="/" element={
             <>
-              {/* SECTION 1: OVERDUE (Only show if we have them) */}
+              {/* SECTION 0: STATS*/}
+              <StatsDashboard problems={allProblems} />
+              <hr style={{ margin: '32px 0', borderColor: '#eee' }} />
+
+              {/* SECTION 1: OVERDUE */}
               {overdueProblems.length > 0 && (
                 <>
                   <Typography variant="h5" sx={{ mb: 2, mt: 2, color: 'error.main', fontWeight: 'bold' }}>
@@ -294,7 +299,6 @@ async function handleReview(problem_id, existingReviewData, rating, currentNotes
                     problems={overdueProblems} 
                     onReview={handleReview} 
                   />
-                  {/* Divider between sections */}
                   <hr style={{ margin: '32px 0', borderColor: '#eee' }} />
                 </>
               )}
