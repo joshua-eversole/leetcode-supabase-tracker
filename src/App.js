@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-
+//Components
 import ProblemForm from './components/ProblemForm';
 import ProblemList from './components/ProblemList';
 import Navbar from './components/Navbar';
 import AllProblemsTable from './components/AllProblemsTable';
 import Auth from './components/Auth';
 import StatsDashboard from './components/StatsDashboard';
-
+//MUI Components
 import Container from '@mui/material/Container';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+//Theme
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { getDesignTokens } from './theme';
+import { useMemo } from 'react';
 
 // Logic behind all of the srl date decisions
 function calculateReview(rating, oldReview) {
@@ -88,8 +94,18 @@ function App()
   const [loading, setLoading] = useState(true); // Loading state
   const navigate = useNavigate(); // Navigation
 
+  // State for color mode
+  const [mode, setMode] = useState('light'); // Default to light
+
+  // Calculate the theme only when 'mode' changes
+  const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
+
+  const toggleColorMode = () => {
+    setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+  };
+
   // Check if we have a session
-  useEffect(() => {
+  useEffect(() => { 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -277,62 +293,68 @@ async function handleReview(problem_id, existingReviewData, rating, currentNotes
   }
 
   return (
-    <>
-      <Navbar />
-      <Container maxWidth="lg">
-        <Routes>
-          {/* Home: Passes the SPLIT lists */}
-          <Route path="/" element={
-            <>
-              {/* SECTION 0: STATS*/}
-              <StatsDashboard problems={allProblems} />
-              <hr style={{ margin: '32px 0', borderColor: '#eee' }} />
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        
+        {/* Pass the toggle function and current mode to Navbar */}
+        <Navbar onToggleTheme={toggleColorMode} currentMode={mode} />
+        
+        <Box sx={{ p: 3 }}> 
+          <Routes>
+            {/* Home: Passes the SPLIT lists */}
+            <Route path="/" element={
+              <>
+                {/* SECTION 0: STATS*/}
+                <StatsDashboard problems={allProblems} />
+                <hr style={{ margin: '32px 0', borderColor: '#eee' }} />
 
-              {/* SECTION 1: OVERDUE */}
-              {overdueProblems.length > 0 && (
-                <>
-                  <Typography variant="h5" sx={{ mb: 2, mt: 2, color: 'error.main', fontWeight: 'bold' }}>
-                    ⚠️ Overdue Reviews
-                  </Typography>
-                  <ProblemList 
-                    loading={loading} 
-                    problems={overdueProblems} 
-                    onReview={handleReview} 
-                  />
-                  <hr style={{ margin: '32px 0', borderColor: '#eee' }} />
-                </>
-              )}
+                {/* SECTION 1: OVERDUE */}
+                {overdueProblems.length > 0 && (
+                  <>
+                    <Typography variant="h5" sx={{ mb: 2, mt: 2, color: 'error.main', fontWeight: 'bold' }}>
+                      ⚠️ Overdue Reviews
+                    </Typography>
+                    <ProblemList 
+                      loading={loading} 
+                      problems={overdueProblems} 
+                      onReview={handleReview} 
+                    />
+                    <hr style={{ margin: '32px 0', borderColor: '#eee' }} />
+                  </>
+                )}
 
-              {/* SECTION 2: TODAY */}
-              <Typography variant="h5" sx={{ mb: 2, mt: 2 }}>
-                Due Today
-              </Typography>
-              <ProblemList 
-                loading={loading} 
-                problems={todaysProblems} 
-                onReview={handleReview} 
-              />
-            </>
-          } />
+                {/* SECTION 2: TODAY */}
+                <Typography variant="h5" sx={{ mb: 2, mt: 2 }}>
+                  Due Today
+                </Typography>
+                <ProblemList 
+                  loading={loading} 
+                  problems={todaysProblems} 
+                  onReview={handleReview} 
+                />
+              </>
+            } />
 
-          {/* Passes the complete list and the delete and edit handlers*/}
-          <Route path="/all" element={
-              <AllProblemsTable 
-                problems={allProblems} 
-                onDelete={handleDeleteProblem} 
-                onEdit={handleEditProblem}     
-              />
-          } />
+            {/* Passes the complete list and the delete and edit handlers*/}
+            <Route path="/all" element={
+                <AllProblemsTable 
+                  problems={allProblems} 
+                  onDelete={handleDeleteProblem} 
+                  onEdit={handleEditProblem}     
+                />
+            } />
 
-          <Route path="/add" element={
-              <ProblemForm onSubmit={handleAddProblem} />
-          } />
+            <Route path="/add" element={
+                <ProblemForm onSubmit={handleAddProblem} />
+            } />
 
-          
-        </Routes>
-      </Container>
-    </>
-  );
-}
+            
+          </Routes>
+        </Box>
+
+      </ThemeProvider>
+    );
+  }
+
 
 export default App;

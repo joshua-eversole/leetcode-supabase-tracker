@@ -1,57 +1,43 @@
+// src/components/Navbar.js
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-
-// --- MUI Imports ---
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import { Link as RouterLink } from 'react-router-dom';
 
-function Navbar() {
-  const location = useLocation();
+// Light/Dark mode options
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7'; 
 
+function Navbar({ onToggleTheme, currentMode }) {
   return (
-    <Box sx={{ flexGrow: 1, mb: 4 }}>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            LeetCode Tracker
-          </Typography>
+    <AppBar position="static" color="transparent" elevation={0} sx={{ backdropFilter: 'blur(10px)', borderBottom: 1, borderColor: 'divider' }}>
+      <Toolbar>
+        <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold', color: 'text.primary' }}>
+          LeetTracker
+        </Typography>
 
-          {/* 1. Home / Review */}
-          <Button 
-            color="inherit" 
-            component={Link} 
-            to="/"
-            sx={{ fontWeight: location.pathname === '/' ? 'bold' : 'normal' }}
-          >
-            For Review
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Button component={RouterLink} to="/" color="inherit">
+            Dashboard
           </Button>
-
-          {/* 2. Problem List */}
-          <Button 
-            color="inherit" 
-            component={Link} 
-            to="/all"
-            sx={{ fontWeight: location.pathname === '/all' ? 'bold' : 'normal' }}
-          >
-            Problem List
+          <Button component={RouterLink} to="/add" color="inherit">
+            Add
           </Button>
-
-          {/* 3. Add Problem */}
-          <Button 
-            color="inherit" 
-            component={Link} 
-            to="/add"
-            sx={{ fontWeight: location.pathname === '/add' ? 'bold' : 'normal' }}
-          >
-            Add Problem
+          <Button component={RouterLink} to="/all" color="inherit">
+            All Problems
           </Button>
-
-        </Toolbar>
-      </AppBar>
-    </Box>
+          
+          {/* THEME TOGGLE BUTTON */}
+          <IconButton sx={{ ml: 1 }} onClick={onToggleTheme} color="inherit">
+            {currentMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 }
 
