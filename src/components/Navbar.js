@@ -12,6 +12,12 @@ import { Link as RouterLink } from 'react-router-dom';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7'; 
 
+// Icons
+import DashboardIcon from '@mui/icons-material/Dashboard'; 
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import ListIcon from '@mui/icons-material/List';
+
+
 function Navbar({ onToggleTheme, currentMode }) {
   return (
     <AppBar position="static" color="transparent" elevation={0} sx={{ backdropFilter: 'blur(10px)', borderBottom: 1, borderColor: 'divider' }}>
@@ -20,22 +26,24 @@ function Navbar({ onToggleTheme, currentMode }) {
           LeetTracker
         </Typography>
 
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <Button component={RouterLink} to="/" color="inherit">
+        {/* Top navbar is hidden on mobile */}
+        <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1, alignItems: 'center' }}>
+          <Button component={RouterLink} to="/" color="inherit" startIcon={<DashboardIcon />}>
             Dashboard
           </Button>
-          <Button component={RouterLink} to="/add" color="inherit">
+          <Button component={RouterLink} to="/add" color="inherit" startIcon={<AddCircleIcon />}>
             Add
           </Button>
-          <Button component={RouterLink} to="/all" color="inherit">
+          <Button component={RouterLink} to="/all" color="inherit" startIcon={<ListIcon />}>
             All Problems
           </Button>
-          
-          {/* THEME TOGGLE BUTTON */}
-          <IconButton sx={{ ml: 1 }} onClick={onToggleTheme} color="inherit">
-            {currentMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-          </IconButton>
         </Box>
+
+        {/* Light/Dark mode toggle is always visible */}
+        <IconButton sx={{ ml: 1 }} onClick={onToggleTheme} color="inherit">
+          {currentMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+        </IconButton>
+
       </Toolbar>
     </AppBar>
   );

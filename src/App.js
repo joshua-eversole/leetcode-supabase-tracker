@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import AllProblemsTable from './components/AllProblemsTable';
 import Auth from './components/Auth';
 import StatsDashboard from './components/StatsDashboard';
+import MobileNav from './components/MobileNav';
 //MUI Components
 import Container from '@mui/material/Container';
 import { Routes, Route, useNavigate } from 'react-router-dom';
@@ -299,7 +300,7 @@ async function handleReview(problem_id, existingReviewData, rating, currentNotes
         {/* Pass the toggle function and current mode to Navbar */}
         <Navbar onToggleTheme={toggleColorMode} currentMode={mode} />
         
-        <Box sx={{ p: 3 }}> 
+        <Box sx={{ p: 3, pb: 10 }}>  {/*Bottom padding for mobile nav*/}
           <Routes>
             {/* Home: Passes the SPLIT lists */}
             <Route path="/" element={
@@ -348,9 +349,10 @@ async function handleReview(problem_id, existingReviewData, rating, currentNotes
                 <ProblemForm onSubmit={handleAddProblem} />
             } />
 
-            
           </Routes>
         </Box>
+
+        <MobileNav />
 
       </ThemeProvider>
     );
