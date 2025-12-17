@@ -63,9 +63,13 @@ function ProblemItem({ problem, onReview }) {
     <Card 
       elevation={4} 
       sx={{ 
+        height: '100%',
         bgcolor: currentStyle.bgcolor,
         borderRadius: 2, 
-        transition: 'transform 0.2s, box-shadow 0.2s', 
+        transition: 'transform 0.3s, box-shadow 0.3s', 
+        display: 'flex',     
+        flexDirection: 'column', 
+        justifyContent: 'space-between',
         '&:hover': {
           transform: 'translateY(-4px)', 
           boxShadow: 8, 

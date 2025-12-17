@@ -62,15 +62,20 @@ function StatsDashboard({ problems }) {
         
         {/* 1. Total Problems */}
         <Grid item xs={6} sm={3}>
-           <StatCard title="Total Solved" value={total} color="primary.main" />
+           <StatCard 
+           title="Questions" 
+           value={total} color="primary.main"  
+           subtext="___"
+           />
         </Grid>
 
         {/* 2. Due Now (Urgency!) */}
         <Grid item xs={6} sm={3}>
            <StatCard 
-             title="Due Reviews" 
+             title="Due Today" 
              value={dueCount} 
-             color={dueCount > 0 ? "error.main" : "success.main"} 
+             color={dueCount > 0 ? "error.main" : "success.main"}   
+           subtext="You got this!"
            />
         </Grid>
 
