@@ -85,7 +85,7 @@ function ProblemForm({ onSubmit }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title || !external_id) return;
-
+    
     onSubmit(title, external_id, difficulty, tags);
 
     setTitle('');

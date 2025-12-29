@@ -136,37 +136,59 @@ function ProblemItem({ problem, onReview }) {
 
       <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
         <Typography variant="caption" sx={{ mr: 2, color: 'text.secondary' }}>
-            Rank to Save Notes & Review:
+            Rank:
         </Typography>
-        {/* Buttons for each possible rating (1 through 5), as well as the calculated times for each*/}
+        
         <ButtonGroup variant="contained" size="small">
-          {Object.entries(problem.reviewIntervals || {}).map(([rating, interval]) => {
-            // Calculate the dte for the interval
-            const targetDate = new Date();
-            targetDate.setDate(targetDate.getDate() + interval);
-            
-            // Make tjhe date human-readable
-            const humanDate = formatRelativeDate(targetDate.toISOString());
-            
-            const tooltipText = interval === 0 
-                ? "Review Today (Fail)" 
-                : `Due ${humanDate}`;
-
-            let colorProp;
-            if (rating === '1') colorProp = 'error';
-            else if (rating === '2') colorProp = 'warning';
-            else if (rating === '3') colorProp = 'secondary';
-            else if (rating === '4') colorProp = 'info';
-            else if (rating === '5') colorProp = 'success';
-
-            return (
-              <Tooltip key={rating} title={tooltipText}>
-                <Button color={colorProp} onClick={() => handleReviewClick(Number(rating))}>
-                  {rating}
+            {/* 1: FAIL */}
+            <Tooltip title="No clue">
+                <Button 
+                    color="error" 
+                    onClick={() => onReview(problem.id, problem.reviewData, 1)}
+                >
+                    1
                 </Button>
-              </Tooltip>
-            );
-          })}
+            </Tooltip>
+
+            {/* 2: HARD */}
+            <Tooltip title="Attempted, but unfinished">
+                <Button 
+                    color="warning" 
+                    onClick={() => onReview(problem.id, problem.reviewData, 2)}
+                >
+                    2
+                </Button>
+            </Tooltip>
+
+            {/* 3: OK */}
+            <Tooltip title="Finished, but with some help">
+                <Button 
+                    color="info" 
+                    onClick={() => onReview(problem.id, problem.reviewData, 3)}
+                >
+                    3
+                </Button>
+            </Tooltip>
+
+            {/* 4: GOOD (New) */}
+            <Tooltip title="Finished, and no help needed">
+                <Button 
+                    color="primary" 
+                    onClick={() => onReview(problem.id, problem.reviewData, 4)}
+                >
+                    4
+                </Button>
+            </Tooltip>
+
+            {/* 5: EASY */}
+            <Tooltip title="Easy to finish">
+                <Button 
+                    color="success" 
+                    onClick={() => onReview(problem.id, problem.reviewData, 5)}
+                >
+                    5
+                </Button>
+            </Tooltip>
         </ButtonGroup>
       </CardActions>
     </Card>

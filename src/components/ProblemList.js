@@ -33,8 +33,8 @@ function ProblemList({ loading, problems, onReview, onSaveDescription }) {
 return (
     <Grid container spacing={2}> 
       {problems.map((problem) => (
-        <Grid item sm={3} md={6} lg={4} key={problem.id}>
-          <ProblemItem
+          <Grid key={problem.id} size={{ xs: 12, sm: 6, md: 4 }}>
+            <ProblemItem
             problem={problem}
             onReview={onReview}
           />

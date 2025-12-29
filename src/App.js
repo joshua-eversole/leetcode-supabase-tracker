@@ -94,7 +94,7 @@ function App() {
             </>
           } />
 
-          <Route path="/add" element={<AddProblemForm onAdd={addProblem} />} />
+          <Route path="/add" element={<AddProblemForm onSubmit={addProblem} />} />
 
           <Route path="/all" element={
             <AllProblemsTable 
