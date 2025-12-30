@@ -1,22 +1,22 @@
-// src/components/Navbar.js
 import React from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+
+// MUI Components
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import { Link as RouterLink } from 'react-router-dom';
 
-// Light/Dark mode options
+// MUI Icons
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7'; 
-
-// Icons
+import IconButton from '@mui/material/IconButton';
 import DashboardIcon from '@mui/icons-material/Dashboard'; 
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import ListIcon from '@mui/icons-material/List';
 import LowPriorityIcon from '@mui/icons-material/LowPriority';
+import SchoolIcon from '@mui/icons-material/School';
 
 
 function Navbar({ onToggleTheme, currentMode }) {
@@ -42,6 +42,9 @@ function Navbar({ onToggleTheme, currentMode }) {
             startIcon={<LowPriorityIcon />}
           >
             Queue
+          </Button>
+          <Button component={RouterLink} to="/curriculum" color="inherit" startIcon={<SchoolIcon />}>
+            Lists
           </Button>
           <Button component={RouterLink} to="/all" color="inherit" startIcon={<ListIcon />}>
             All Problems

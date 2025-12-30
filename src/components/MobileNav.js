@@ -11,6 +11,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import ListIcon from '@mui/icons-material/List';
 import LowPriorityIcon from '@mui/icons-material/LowPriority';
+import SchoolIcon from '@mui/icons-material/School';
 
 
 function MobileNav() {
@@ -50,6 +51,11 @@ function MobileNav() {
           label="Queue" 
           value="/queue" 
           icon={<LowPriorityIcon />} 
+        />
+        <BottomNavigationAction 
+          label="Lists" 
+          value="/curriculum" 
+          icon={<SchoolIcon />} 
         />
         <BottomNavigationAction 
           label="All" 

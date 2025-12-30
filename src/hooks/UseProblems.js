@@ -118,6 +118,32 @@ export function useProblems(session) {
     }
   };
 
+  // Bulk Add
+  const bulkAddProblems = async (newProblems) => {
+    if (!session || newProblems.length === 0) return;
+
+    // Prepare data by adding user_id and status
+    const payload = newProblems.map(p => ({
+      ...p,
+      user_id: session.user.id,
+      status: 'queued' //Send it to the backlog
+    }));
+
+    const { data, error } = await supabase
+      .from('problems')
+      .insert(payload)
+      .select();
+
+    if (error) {
+      console.error("Bulk add error:", error);
+      return;
+    }
+
+    // Update local state
+    const formattedData = data.map(p => ({ ...p, reviewData: null }));
+    setProblems(prev => [...prev, ...formattedData]);
+  };
+
   return { 
     problems, 
     loading, 

@@ -11,6 +11,7 @@ import AddProblemForm from './components/ProblemForm';
 import AllProblemsTable from './components/AllProblemsTable';
 import StatsDashboard from './components/StatsDashboard';
 import QueueList from './components/QueueList';
+import Curriculum from './components/Curriculum';
 
 // Mui Components
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -42,7 +43,7 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // --- 2. DATA STATE (Using our Hook) ---
+  // Data State
   const { 
     problems: allProblems, 
     loading, 
@@ -50,14 +51,15 @@ function App() {
     reviewProblem, 
     deleteProblem, 
     editProblem,
-    updateStatus 
+    updateStatus,
+    bulkAddProblems
   } = useProblems(session);
 
-  // --- 3. THEME LOGIC ---
+  // Theme
   const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
   const toggleColorMode = () => setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
 
-  // --- 4. DERIVED LISTS (Overdue vs Today) ---
+  // Overdue vs Today
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -79,7 +81,7 @@ function App() {
     return nextReview.getTime() === today.getTime();
   });
 
-  // --- RENDER ---
+  // Render
   if (!session) return <Auth />;
 
   return (
@@ -128,6 +130,17 @@ function App() {
             path="/queue" 
             element={<QueueList problems={queuedProblems} onActivate={updateStatus} />} 
           />
+
+          {/* Curriculum */}
+          <Route 
+            path="/curriculum" 
+            element={
+              <Curriculum 
+                existingProblems={allProblems} 
+                onBulkAdd={bulkAddProblems} 
+              />
+            } 
+          /> 
         </Routes>
       </Box>
 
