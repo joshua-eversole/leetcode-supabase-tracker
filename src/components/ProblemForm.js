@@ -28,7 +28,7 @@ function ProblemForm({ onSubmit }) {
   const [external_id, setExternalId] = useState('');
   const [difficulty, setDifficulty] = useState('Easy');
   const [tags, setTags] = useState([]);
-  const [addToQueue, setAddToQueue] = useState(false);
+  const [addToQueue, setAddToQueue] = useState(true); // Default to add to queue
 
   const extractSlug = (inputUrl) => {
     try {
@@ -97,7 +97,7 @@ function ProblemForm({ onSubmit }) {
         setTitle('');
         setExternalId('');
         setTags([]);
-        setAddToQueue(false);
+        setAddToQueue(true);
       }
     };
 
