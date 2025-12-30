@@ -22,7 +22,16 @@ import { getDesignTokens } from './theme';
 function App() {
   // Login
   const [session, setSession] = useState(null);
-  const [mode, setMode] = useState('light');
+  // If we have a saved themem ode, use that
+  const [mode, setMode] = useState(() => {
+    const savedMode = localStorage.getItem('leetcode-tracker-theme');
+    if (savedMode) return savedMode;
+    return 'light';
+  });
+  // Remember the theme mode
+  useEffect(() => {
+    localStorage.setItem('leetcode-tracker-theme', mode);
+  }, [mode]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
