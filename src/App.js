@@ -1,9 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import { supabase } from './supabaseClient';
 
 // Components
@@ -14,6 +10,13 @@ import ProblemList from './components/ProblemList';
 import AddProblemForm from './components/ProblemForm';
 import AllProblemsTable from './components/AllProblemsTable';
 import StatsDashboard from './components/StatsDashboard';
+import QueueList from './components/QueueList';
+
+// Mui Components
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 
 // Hooks & Utilities
 import { useProblems } from './hooks/UseProblems';
@@ -46,7 +49,8 @@ function App() {
     addProblem, 
     reviewProblem, 
     deleteProblem, 
-    editProblem 
+    editProblem,
+    updateStatus 
   } = useProblems(session);
 
   // --- 3. THEME LOGIC ---
@@ -57,14 +61,18 @@ function App() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const overdueProblems = allProblems.filter(p => {
+  // filter out the inactive problems
+  const activeProblems = allProblems.filter(p => p.status === 'active');
+  const queuedProblems = allProblems.filter(p => p.status === 'queued');
+
+  const overdueProblems = activeProblems.filter(p => {
     if (!p.reviewData) return false;
     const nextReview = new Date(p.reviewData.next_review_at);
     nextReview.setHours(0, 0, 0, 0);
     return nextReview < today;
   });
 
-  const todaysProblems = allProblems.filter(p => {
+  const todaysProblems = activeProblems.filter(p => {
     if (!p.reviewData) return true; // New problems
     const nextReview = new Date(p.reviewData.next_review_at);
     nextReview.setHours(0, 0, 0, 0);
@@ -81,7 +89,7 @@ function App() {
       
       <Box sx={{ p: 3, pb: 10 }}>
         <Routes>
-          {/* HOME */}
+          {/* Home */}
           <Route path="/" element={
             <>
               <StatsDashboard problems={allProblems} />
@@ -103,8 +111,10 @@ function App() {
             </>
           } />
 
+          {/* Add Problem */}
           <Route path="/add" element={<AddProblemForm onSubmit={addProblem} />} />
-
+          
+          {/* All Problems */}
           <Route path="/all" element={
             <AllProblemsTable 
               problems={allProblems} 
@@ -112,6 +122,12 @@ function App() {
               onEdit={editProblem} 
             />
           } />
+
+          {/* Queued Problems */}
+          <Route 
+            path="/queue" 
+            element={<QueueList problems={queuedProblems} onActivate={updateStatus} />} 
+          />
         </Routes>
       </Box>
 

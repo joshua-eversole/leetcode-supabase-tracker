@@ -14,6 +14,8 @@ import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 
 function ProblemForm({ onSubmit }) {
   const [showForm, setShowForm] = useState(false); // for visibility of the non-leetcode forms
@@ -26,6 +28,7 @@ function ProblemForm({ onSubmit }) {
   const [external_id, setExternalId] = useState('');
   const [difficulty, setDifficulty] = useState('Easy');
   const [tags, setTags] = useState([]);
+  const [addToQueue, setAddToQueue] = useState(false);
 
   const extractSlug = (inputUrl) => {
     try {
@@ -83,18 +86,20 @@ function ProblemForm({ onSubmit }) {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!title || !external_id) return;
-    
-    onSubmit(title, external_id, difficulty, tags);
-
-    setTitle('');
-    setExternalId('');
-    setDifficulty('Easy');
-    setUrl('');
-    setTags([]);
-    setShowForm(false);
-  };
+      e.preventDefault();
+      if (title && external_id) {
+        // Decide whether we add it to the queue or put it in the active questions
+        const status = addToQueue ? 'queued' : 'active';
+        
+        onSubmit(title, external_id, difficulty, tags, status);
+        
+        // Clear form
+        setTitle('');
+        setExternalId('');
+        setTags([]);
+        setAddToQueue(false);
+      }
+    };
 
   return (
     <Box
@@ -179,6 +184,19 @@ function ProblemForm({ onSubmit }) {
                 <MenuItem value="Hard">Hard</MenuItem>
                 </Select>
             </FormControl>
+
+            <Box sx={{ mb: 2, mt: 2 }}>
+              <FormControlLabel 
+                control={
+                  <Switch 
+                    checked={addToQueue} 
+                    onChange={(e) => setAddToQueue(e.target.checked)} 
+                    color="secondary"
+                  />
+                } 
+                label={addToQueue ? "Add to Backlog (Save for later)" : "Start Learning Now (Active)"} 
+              />
+            </Box>
 
             <Box sx={{ display: 'flex', gap: 2 }}>
                 <Button 

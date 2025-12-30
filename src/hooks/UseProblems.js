@@ -27,14 +27,19 @@ export function useProblems(session) {
   }, [session]);
 
   // Add
-  const addProblem = async (title, external_id, difficulty, fetchedTags = []) => {
+ const addProblem = async (title, external_id, difficulty, fetchedTags = [], initialStatus = 'active') => {
     if (!session) return;
     
     // Insert Problem
     const { data, error } = await supabase
       .from('problems')
       .insert([{ 
-        title, external_id, difficulty, tags: fetchedTags, user_id: session.user.id 
+        title, 
+        external_id, 
+        difficulty, 
+        tags: fetchedTags, 
+        user_id: session.user.id,
+        status: initialStatus
       }])
       .select();
 
@@ -99,12 +104,27 @@ export function useProblems(session) {
     }
   };
 
+  // Update Status
+  const updateStatus = async (id, newStatus) => {
+    const { error } = await supabase
+      .from('problems')
+      .update({ status: newStatus })
+      .eq('id', id);
+
+    if (!error) {
+      setProblems(prev => prev.map(p => 
+        p.id === id ? { ...p, status: newStatus } : p
+      ));
+    }
+  };
+
   return { 
     problems, 
     loading, 
     addProblem, 
     reviewProblem, 
     deleteProblem, 
-    editProblem 
+    editProblem,
+    updateStatus
   };
 }

@@ -16,6 +16,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import DashboardIcon from '@mui/icons-material/Dashboard'; 
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import ListIcon from '@mui/icons-material/List';
+import LowPriorityIcon from '@mui/icons-material/LowPriority';
 
 
 function Navbar({ onToggleTheme, currentMode }) {
@@ -33,6 +34,14 @@ function Navbar({ onToggleTheme, currentMode }) {
           </Button>
           <Button component={RouterLink} to="/add" color="inherit" startIcon={<AddCircleIcon />}>
             Add
+          </Button>
+          <Button 
+            component={RouterLink} 
+            to="/queue" 
+            color="inherit" 
+            startIcon={<LowPriorityIcon />}
+          >
+            Queue
           </Button>
           <Button component={RouterLink} to="/all" color="inherit" startIcon={<ListIcon />}>
             All Problems

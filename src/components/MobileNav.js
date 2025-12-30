@@ -10,6 +10,7 @@ import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import ListIcon from '@mui/icons-material/List';
+import LowPriorityIcon from '@mui/icons-material/LowPriority';
 
 
 function MobileNav() {
@@ -44,6 +45,11 @@ function MobileNav() {
           label="Add" 
           value="/add" 
           icon={<AddCircleIcon />} 
+        />
+        <BottomNavigationAction 
+          label="Queue" 
+          value="/queue" 
+          icon={<LowPriorityIcon />} 
         />
         <BottomNavigationAction 
           label="All" 
