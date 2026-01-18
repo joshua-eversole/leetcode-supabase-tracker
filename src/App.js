@@ -18,6 +18,8 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import AddTaskIcon from '@mui/icons-material/AddTask';
+import Button from '@mui/material/Button';
 
 // Hooks & Utilities
 import { useProblems } from './hooks/UseProblems';
@@ -52,7 +54,8 @@ function App() {
     deleteProblem, 
     editProblem,
     updateStatus,
-    bulkAddProblems
+    bulkAddProblems,
+    pullFromQueue
   } = useProblems(session);
 
   // Theme
@@ -96,6 +99,49 @@ function App() {
             <>
               <StatsDashboard problems={allProblems} />
               
+              {/* If empty, allow the user to pull a problem from the queue */}
+              {activeProblems.length > 0 && overdueProblems.length === 0 && todaysProblems.length === 0 && (
+                <Box sx={{ 
+                  textAlign: 'center', 
+                  py: 6, 
+                  px: 2, 
+                  mt: 2, 
+                  mb: 4, 
+                  bgcolor: 'action.hover', 
+                  borderRadius: 2, 
+                  border: '1px dashed',
+                  borderColor: 'text.disabled'
+                }}>
+                  <Typography variant="h5" gutterBottom>
+                    🎉 You're all caught up!
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                    Great job. You have no reviews due right now.
+                  </Typography>
+                  
+                  {/* IMPORTANT: This button only shows if there are problems in the queue */}
+                  {queuedProblems.length > 0 ? (
+                    <>
+                      <Button 
+                        variant="contained" 
+                        size="large" 
+                        startIcon={<AddTaskIcon />}
+                        onClick={pullFromQueue}
+                      >
+                        Pull Next from Queue
+                      </Button>
+                      <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.disabled' }}>
+                        {queuedProblems.length} problems waiting in backlog
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                      (Your backlog is empty. Add more problems to keep learning!)
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
               {/* Overdue Section */}
               {overdueProblems.length > 0 && (
                 <>

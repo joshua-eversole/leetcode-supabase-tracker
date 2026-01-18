@@ -9,21 +9,27 @@ export function useProblems(session) {
   useEffect(() => {
     if (!session) return;
 
-    async function fetchData() {
+    const fetchProblems = async () => {
       setLoading(true);
-      const { data: problemsData } = await supabase.from('problems').select('*');
-      const { data: reviewsData } = await supabase.from('reviews').select('*');
+      const { data, error } = await supabase
+        .from('problems')
+        .select('*');
 
-      const reviewsMap = new Map(reviewsData.map(r => [r.problem_id, r]));
-      const merged = problemsData.map(p => ({
-        ...p,
-        reviewData: reviewsMap.get(p.id) || null
-      }));
-
-      setProblems(merged);
+      if (error) {
+        console.error('Error fetching problems:', error);
+      } else {
+        
+        const formattedData = data.map(p => ({
+          ...p,
+          reviewData: p.review_data
+        }));
+        
+        setProblems(formattedData);
+      }
       setLoading(false);
-    }
-    fetchData();
+    };
+
+    fetchProblems();
   }, [session]);
 
   // Add
@@ -53,34 +59,89 @@ export function useProblems(session) {
     setProblems(prev => [...prev, newProblem]);
   };
 
-  // Review
-  const reviewProblem = async (problem_id, oldReview, rating) => {
-    if (!session) return;
-
-    const newReviewData = calculateReview(rating, oldReview);
-    const next_review_date = new Date();
-    next_review_date.setDate(next_review_date.getDate() + newReviewData.interval_days);
-
-    const payload = {
-      user_id: session.user.id,
-      problem_id,
-      ...newReviewData,
-      next_review_at: next_review_date.toISOString(),
-      last_reviewed_at: new Date().toISOString(),
-    };
-
-    const { error } = await supabase.from('reviews').upsert(payload);
-    if (error) {
-      console.error(error);
-      return;
-    }
-
+// When you press a number in the problem card, it will call this function
+  const reviewProblem = async (id, currentReviewData, rating) => {
+    // Hide it immediately while we work on the database update
     setProblems(prev => prev.map(p => {
-      if (p.id === problem_id) {
-        return { ...p, reviewData: { ...p.reviewData, ...payload } };
+      if (p.id === id) {
+        // Temporarily hide it or mark it as reviewed in local state 
+        // We're putting the next_review_at placeholder in 2099, so it will never show up in the UI
+        return { ...p, reviewData: { ...p.reviewData, next_review_at: '2099-01-01' } };
       }
       return p;
     }));
+
+    // Decide on the next interval if this is a new or existing question
+    const now = new Date();
+    const existing = currentReviewData || { 
+      interval: 0, 
+      ease: 2.5, 
+      consecutive_successes: 0 
+    };
+
+    let newInterval = 1;
+    let newEase = existing.ease;
+    let newConsecutive = existing.consecutive_successes;
+
+    if (rating < 2) {
+      // If you failed, reset progress
+      newInterval = 1;
+      newConsecutive = 0;
+      newEase = Math.max(1.3, newEase - 0.2);
+    } else {
+      // If you succeeded, calculate next interval based on rating
+      newConsecutive++;
+      
+      // Simple Spaced Repetition Logic:
+      if (newConsecutive === 1) {
+        newInterval = 1;
+      } else if (newConsecutive === 2) {
+        newInterval = 6;
+      } else {
+        // Multiplier based on rating
+        const bonus = rating === 5 ? 1.5 : (rating === 2 ? 0.8 : 1.0);
+        newInterval = Math.round(existing.interval * existing.ease * bonus);
+      }
+      
+      // Adjust ease factor slightly
+      if (rating === 5) newEase += 0.1;
+      if (rating === 2) newEase -= 0.15;
+    }
+
+    // Calculate the Date
+    const nextDate = new Date();
+    nextDate.setDate(now.getDate() + newInterval + 1); // Add 1 to the interval to account for the current day
+    
+    const updatedData = {
+      interval: newInterval,
+      ease: newEase,
+      consecutive_successes: newConsecutive,
+      last_reviewed_at: now.toISOString(),
+      next_review_at: nextDate.toISOString()
+    };
+
+    // 3. Save to Supabase
+    try {
+      const { error } = await supabase
+        .from('problems')
+        .update({ 
+          review_data: updatedData, // Make sure your column is named 'review_data'
+          status: 'active'          // Ensure it stays active
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      // 4. Verification: Update local state with the REAL data from DB
+      setProblems(prev => prev.map(p => 
+        p.id === id ? { ...p, reviewData: updatedData } : p
+      ));
+
+    } catch (err) {
+      console.error("Failed to save review:", err);
+      alert("Error saving review! Check console.");
+      // Optional: Revert the UI if it failed (reload page or undo state change)
+    }
   };
 
   // Delete
@@ -144,6 +205,42 @@ export function useProblems(session) {
     setProblems(prev => [...prev, ...formattedData]);
   };
 
+  // Pull the next problem from the queue
+  const pullFromQueue = async () => {
+    // Find the oldest queued item locally 
+    //       (FIFO based on id #, earlier numbers are created earlier)
+    const queuedProblems = problems.filter(p => p.status === 'queued');
+    
+    if (queuedProblems.length === 0) {
+      alert("Your queue is empty!");
+      return;
+    }
+
+    // Grab the next problem  
+    const nextProblem = queuedProblems.sort((a, b) => a.id - b.id)[0];
+
+    // Update the database
+    const { error } = await supabase
+      .from('problems')
+      .update({ 
+        status: 'active',
+        review_data: null // Reset this so it shows up as "Due Today
+      })
+      .eq('id', nextProblem.id);
+
+    if (error) {
+      console.error("Error pulling from queue:", error);
+      return;
+    }
+
+    //Update the lcoal state so that it shows up immediately
+    setProblems(prev => prev.map(p => 
+      p.id === nextProblem.id 
+        ? { ...p, status: 'active', reviewData: null } 
+        : p
+    ));
+  };
+
   return { 
     problems, 
     loading, 
@@ -151,6 +248,7 @@ export function useProblems(session) {
     reviewProblem, 
     deleteProblem, 
     editProblem,
-    updateStatus
+    updateStatus,
+    pullFromQueue
   };
 }
