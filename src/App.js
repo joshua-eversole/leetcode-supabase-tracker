@@ -12,6 +12,7 @@ import AllProblemsTable from './components/AllProblemsTable';
 import StatsDashboard from './components/StatsDashboard';
 import QueueList from './components/QueueList';
 import Curriculum from './components/Curriculum';
+import SettingsModal from './components/SettingsModal';
 
 // Mui Components
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -28,6 +29,7 @@ import { getDesignTokens } from './theme';
 function App() {
   // Login
   const [session, setSession] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // If we have a saved themem ode, use that
   const [mode, setMode] = useState(() => {
     const savedMode = localStorage.getItem('leetcode-tracker-theme');
@@ -90,7 +92,11 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Navbar onToggleTheme={toggleColorMode} currentMode={mode} />
+      <Navbar 
+        onToggleTheme={toggleColorMode} 
+        currentMode={mode} 
+        onOpenSettings={() => setSettingsOpen(true)} 
+      />
       
       <Box sx={{ p: 3, pb: 10 }}>
         <Routes>
@@ -188,7 +194,15 @@ function App() {
             } 
           /> 
         </Routes>
-      </Box>
+        <SettingsModal 
+          open={settingsOpen} 
+          onClose={() => setSettingsOpen(false)} 
+          onSave={(target, offset) => {
+            console.log("Settings Saved:", target, offset);
+            // We will add the logic here in the next step!
+          }} 
+        />
+      </Box>x``
 
       <MobileNav />
     </ThemeProvider>

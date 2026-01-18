@@ -6,7 +6,82 @@ export function useProblems(session) {
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+// --- DAILY DRIP ENGINE 💧 ---
+  const runDailyDrip = async (currentProblems) => {
+    // 1. Check if we already ran today
+    const todayKey = new Date().toDateString();
+    const lastRun = localStorage.getItem('lastDripDate');
+    const target = parseInt(localStorage.getItem('dailyTarget') || '0', 10);
+    const useOffset = localStorage.getItem('useSmartOffset') === 'true';
+
+    // 1a. Stop if ran today OR target is 0
+    if (lastRun === todayKey || target === 0) return currentProblems;
+
+    console.log("💧 Running Daily Drip...");
+
+    // 2. Calculate "Due Today" (for Smart Offset)
+    let dueCount = 0;
+    if (useOffset) {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Start of day
+      
+      dueCount = currentProblems.filter(p => {
+        // 2a. Count active problems that are due today or overdue
+        if (p.status !== 'active' || !p.reviewData) return false;
+        const nextReview = new Date(p.reviewData.next_review_at);
+        nextReview.setHours(0, 0, 0, 0);
+        return nextReview <= now;
+      }).length;
+    }
+
+    // 3. Calculate how many to pull
+    const needed = Math.max(0, target - dueCount);
+
+    if (needed === 0) {
+      console.log("💧 Smart Offset: Enough work due already. Skipping pull.");
+      localStorage.setItem('lastDripDate', todayKey); 
+      return currentProblems;
+    }
+
+    // 4. Find candidates from Queue (Oldest First)
+    const queue = currentProblems
+      .filter(p => p.status === 'queued')
+      .sort((a, b) => a.id - b.id); // Assumes lower ID = older -- CHANGE THIS WHEN YOU UPDATE THE DATABASE
+
+    const toActivate = queue.slice(0, needed);
+    
+    if (toActivate.length === 0) {
+      console.log("💧 Queue is empty.");
+      localStorage.setItem('lastDripDate', todayKey); 
+      return currentProblems;
+    }
+
+    const idsToUpdate = toActivate.map(p => p.id);
+
+    // 5. Update Supabase
+    const { error } = await supabase
+      .from('problems')
+      .update({ status: 'active', review_data: null })
+      .in('id', idsToUpdate);
+
+    if (error) {
+      console.error("💧 Drip Failed:", error);
+      return currentProblems;
+    }
+
+    // 6. Success! Mark today as done and update local list
+    console.log(`💧 Activated ${idsToUpdate.length} new problems.`);
+    localStorage.setItem('lastDripDate', todayKey);
+
+    // 7. Return the updated list so the UI updates instantly
+    return currentProblems.map(p => 
+      idsToUpdate.includes(p.id) 
+        ? { ...p, status: 'active', reviewData: null } 
+        : p
+    );
+  };
+
+useEffect(() => {
     if (!session) return;
 
     const fetchProblems = async () => {
@@ -17,13 +92,14 @@ export function useProblems(session) {
 
       if (error) {
         console.error('Error fetching problems:', error);
-      } else {
-        
-        const formattedData = data.map(p => ({
+      } 
+      else {
+        let formattedData = data.map(p => ({
           ...p,
           reviewData: p.review_data
-        }));
-        
+        }
+      ));
+        formattedData = await runDailyDrip(formattedData);
         setProblems(formattedData);
       }
       setLoading(false);
